@@ -7,7 +7,7 @@ class AudioLoader():
     def __init__(self):
         pass
 
-    def load_audio(file_path: str | Path, mono: bool = True) -> tuple[np.ndarray, int]:
+    def load_audio(self, file_path: str | Path, mono: bool = True) -> tuple[np.ndarray, int]:
         """
         Load an audio file into a NumPy array.
 
@@ -47,8 +47,8 @@ class AudioLoader():
 
 if __name__ == "__main__":
     from tkinter import filedialog
-    # loader = AudioLoader()
-    audio_data, fs = AudioLoader.load_audio(filedialog.askopenfilename())
+    loader = AudioLoader()
+    audio_data, fs = loader.load_audio(filedialog.askopenfilename())
 
     print(f"Sample rate: {fs}")
     print(f"Audio shape: {audio_data.shape}")
