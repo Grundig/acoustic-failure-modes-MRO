@@ -1,10 +1,11 @@
 from tkinter import filedialog
-from afm.importers.reading_data import load_audio
+from afm.importers.reading_data import AudioLoader
 from afm.visualisation.plots import Plots
 
 
 def load():
-    audio, sample_rate = load_audio(filedialog.askopenfilename())
+    loader = AudioLoader()
+    audio, sample_rate = loader.load_audio(filedialog.askopenfilename())
 
     return audio, sample_rate
 

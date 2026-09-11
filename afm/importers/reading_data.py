@@ -3,7 +3,7 @@ from pathlib import Path
 import numpy as np
 from pydub import AudioSegment
 
-class AudioLoader():
+class AudioLoader:
     def __init__(self):
         pass
 
