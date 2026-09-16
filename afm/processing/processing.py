@@ -13,3 +13,7 @@ class Processor:
     def get_log_mel_spectrum(audio, sample_rate, n_fft = 1028, n_mels = 128):
         transform = torchaudio.transforms.MelSpectrogram(sample_rate, n_fft)
         return transform(audio)
+
+    @staticmethod
+    def get_pitch(audio, sample_rate):
+        return torchaudio.functional.detect_pitch_frequency(audio, sample_rate)
