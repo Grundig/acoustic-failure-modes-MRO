@@ -1,16 +1,13 @@
 from pathlib import Path
-
-import numpy as np
-from pydub import AudioSegment
+import torch
+import torchaudio
 
 class AudioLoader:
     def __init__(self):
         pass
 
-    def load_audio(self, file_path: str | Path, mono: bool = True) -> tuple[np.ndarray, int]:
+    def load_audio(self, file_path: str | Path, mono: bool = True):
         """
-        Load an audio file into a NumPy array.
-
         Args:
             file_path: Path to the audio file.
             mono: If True, convert audio to mono.
@@ -25,24 +22,11 @@ class AudioLoader:
         if not file_path.exists():
             raise FileNotFoundError(f"Audio file not found: {file_path}")
 
-        audio = AudioSegment.from_file(file_path)
+        waveform, sample_rate = torchaudio.load(file_path)
+        if mono and waveform.shape[0] > 1:
+            waveform = torch.mean(waveform, dim=0, keepdim=True)
 
-        if mono:
-            audio = audio.set_channels(1)
-
-        sample_rate = audio.frame_rate
-        sample_width = audio.sample_width
-        channels = audio.channels
-
-        samples = np.array(audio.get_array_of_samples())
-
-        if channels > 1:
-            samples = samples.reshape((-1, channels))
-
-        max_possible_value = float(1 << (8 * sample_width - 1))
-        samples = samples.astype(np.float32) / max_possible_value
-
-        return samples, sample_rate
+        return waveform, sample_rate
 
 
 if __name__ == "__main__":

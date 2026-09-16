@@ -1,24 +1,15 @@
-from tkinter import filedialog
-from afm.importers.reading_data import AudioLoader
-from afm.visualisation.plots import Plots
+import torchaudio
 
 class Processor:
     def __init__(self):
         pass
 
     @staticmethod
-    def load():
-        loader = AudioLoader()
-        audio, sample_rate = loader.load_audio(filedialog.askopenfilename())
+    def get_spectrum(audio, n_fft = 1028):
+        transform = torchaudio.transforms.Spectrogram(n_fft)
+        return transform(audio)
 
-        return audio, sample_rate
-
-
-    def main(self):
-        audio, sample_rate = self.load()
-        Plots.plot_spectrogram(audio, sample_rate, vmax=0.01)
-
-
-if __name__ == "__main__":
-    p = Processor()
-    p.main()
+    @staticmethod
+    def get_log_mel_spectrum(audio, sample_rate, n_fft = 1028, n_mels = 128):
+        transform = torchaudio.transforms.MelSpectrogram(sample_rate, n_fft)
+        return transform(audio)
