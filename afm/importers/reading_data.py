@@ -22,7 +22,7 @@ class AudioLoader:
         if not file_path.exists():
             raise FileNotFoundError(f"Audio file not found: {file_path}")
 
-        waveform, sample_rate = torchaudio.load(file_path)
+        waveform, sample_rate = torchaudio.load(file_path, num_frames=10000)
         if mono and waveform.shape[0] > 1:
             waveform = torch.mean(waveform, dim=0, keepdim=True)
 
