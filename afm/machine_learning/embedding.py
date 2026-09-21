@@ -1,6 +1,8 @@
 from speechbrain.lobes.models.beats import BEATs, BEATsConfig
 from pathlib import Path
 import torch
+import numpy as np
+from sklearn.neighbors import NearestNeighbors
 
 DEVICE = torch.device("cpu")
 
@@ -12,10 +14,51 @@ class Embedding:
         self.model.to(DEVICE)
         self.model.eval()
 
-    def process(self, audio):
-        # audio = torch.randn(4, 10000)  # Batch of 4 audio signals
-        # wav_lengths = torch.tensor([1.0, 0.5, 0.75, 1.0])
+    def process_extract_features(self, audio):
         if audio.dim() == 1:
             audio = audio.unsqueeze(0)
-        wav_lengths = torch.ones(audio.shape[0], device=audio.device)
-        return self.model.extract_features(audio, wav_lengths)
+        audio_lengths = torch.ones(audio.shape[0], device=audio.device)
+        return self.model.extract_features(audio, audio_lengths)
+
+    def process_forward(self, audio):
+        if audio.dim() == 1:
+            audio = audio.unsqueeze(0)
+        audio_lengths = torch.ones(audio.shape[0], device=audio.device)
+        return self.model.forward(audio, audio_lengths)
+
+class BaselineEmbeddings:
+    def __init__(self, model, window_s=10, sample_rate=16000):
+        self.model = model.eval()
+        self.window_samples = window_s * sample_rate
+        self.baseline = None  # (n_windows, embed_dim)
+
+    def _embed(self, audio):
+        # audio: (1, T) mono, already resampled to model's expected rate
+        audio_lengths = torch.ones(1, device=audio.device)
+        with torch.no_grad():
+            feats = self.model.extract_features(audio, audio_lengths)  # (1, time, dim)
+        return feats.mean(dim=1).squeeze(0).numpy()  # (dim,) mean-pooled
+
+    def _chunk(self, audio):
+        # split into fixed windows,
+        n = audio.shape[-1] // self.window_samples
+        return [audio[..., i * self.window_samples:(i + 1) * self.window_samples] for i in range(n)]
+
+    def build(self, normal_recordings):
+        """normal_recordings: list of (1, T) waveforms captured under known-good conditions"""
+        embs = []
+        for audio in normal_recordings:
+            for chunk in self._chunk(audio):
+                embs.append(self._embed(chunk))
+        self.baseline = np.stack(embs)  # your reference bank
+        return self.baseline
+
+    def score(self, audio, k=5):
+        """Anomaly score for a new recording: mean distance to k nearest baseline embeddings"""
+        nn = NearestNeighbors(n_neighbors=k, metric="cosine").fit(self.baseline)
+        scores = []
+        for chunk in self._chunk(audio):
+            emb = self._embed(chunk).reshape(1, -1)
+            dist, _ = nn.kneighbors(emb)
+            scores.append(dist.mean())
+        return np.array(scores)  # one score per window; higher = more anomalous
