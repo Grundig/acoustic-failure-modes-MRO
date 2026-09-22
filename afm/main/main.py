@@ -4,6 +4,7 @@ from afm.importers.reading_data import AudioLoader
 from afm.processing.processing import Processor
 from afm.visualisation.plots import Plots
 from tkinter import filedialog
+from pathlib import Path
 
 import torch
 torch.set_num_threads(4)
@@ -18,12 +19,13 @@ class Main:
         self.filepath = filedialog.askdirectory()
         self.waveform = None
         self.sample_rate = None
+        self.audio_list = None
         self.load()
 
     def load(self):
-        audio_list = self.loader.load_audio(self.filepath, num_frames=-1)
-        if audio_list:
-            self.waveform, self.sample_rate = audio_list[0]
+        self.audio_list = self.loader.load_audio(self.filepath, num_frames=-1)
+        if self.audio_list:
+            self.waveform, self.sample_rate = self.audio_list[0]
         else:
             raise ValueError(f"No audio files found in: {self.filepath}")
 
@@ -41,8 +43,14 @@ class Main:
         plt.show()
 
     def run(self):
-        pass
+        self.load()
+        # self.visualise()
 
+        baseline_features_bank = self.processor.get_baseline_features(self.audio_list)
+        new_audio = self.loader.load_audio(Path(self.filepath).parent, num_frames=-1)[0][0]
+        print(new_audio)
+        comparison_score = self.processor.get_comparison_score(new_audio, baseline_features_bank)
+        print(comparison_score)
 
 
 if __name__ == "__main__":
